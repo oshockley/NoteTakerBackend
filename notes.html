@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .auth-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .note-form {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        .note-form input,
+        .note-form textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        .note-form input:focus,
+        .note-form textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .note-form textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .notes-list {
+            display: grid;
+            gap: 20px;
+        }
+        .note-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .note-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .note-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        .note-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        .note-meta {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+        .note-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+        .empty-state h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        #userEmail {
+            color: #667eea;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 My Notes</h1>
+            <p id="userInfo"></p>
+        </div>
+
+        <!-- Auth Section (Login/Signup) -->
+        <div id="authSection" class="auth-section">
+            <h2 style="margin-bottom: 20px;">Sign In to View Your Notes</h2>
+            <div class="message" id="authMessage"></div>
+            <input type="email" id="authEmail" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border:2px solid #e0e0e0; border-radius:8px;">
+            <input type="password" id="authPassword" placeholder="Password" style="width:100%; padding:12px; margin-bottom:15px; border:2px solid #e0e0e0; border-radius:8px;">
+            <button class="btn" id="loginBtn">Sign In</button>
+            <button class="btn" id="signupBtn" style="margin-left: 10px; background: #95a5a6;">Sign Up</button>
+        </div>
+
+        <!-- Notes Section (Hidden until logged in) -->
+        <div id="notesSection" style="display: none;">
+            <!-- Add Note Form -->
+            <div class="note-form">
+                <div class="message" id="noteMessage"></div>
+                <input type="text" id="noteTitle" placeholder="Note Title (optional)">
+                <textarea id="noteContent" placeholder="Write your note here..."></textarea>
+                <button class="btn" id="saveNoteBtn">Save Note</button>
+                <button class="btn" id="cancelEditBtn" style="display:none; background: #95a5a6; margin-left: 10px;">Cancel</button>
+                <button class="btn btn-danger" id="logoutBtn" style="float: right;">Logout</button>
+            </div>
+
+            <!-- Notes List -->
+            <div id="notesList" class="notes-list"></div>
+        </div>
+    </div>
+
+    <!-- Load Supabase -->
+    <!-- Load Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    // Wrap everything to prevent re-declaration
+    (function() {
+        // Your Supabase credentials
+        const SUPABASE_URL = 'https://qrqmpmakaxxkdecfidpo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFycW1wbWFrYXh4a2RlY2ZpZHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5NTMzMTEsImV4cCI6MjA4NDUyOTMxMX0.tH9bcf-_TyKHnpAAjliZt9whqkeZzmIHQCVwaCpasN0';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // DOM Elements
+        const authSection = document.getElementById('authSection');
+        const notesSection = document.getElementById('notesSection');
+        const authMessage = document.getElementById('authMessage');
+        const noteMessage = document.getElementById('noteMessage');
+        const noteTitle = document.getElementById('noteTitle');
+        const noteContent = document.getElementById('noteContent');
+        const notesList = document.getElementById('notesList');
+        const userInfo = document.getElementById('userInfo');
+
+        let currentUser = null;
+        let editingNoteId = null;
+
+        // Check if user is logged in
+        async function checkUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            currentUser = user;
+            
+            if (user) {
+                authSection.style.display = 'none';
+                notesSection.style.display = 'block';
+                userInfo.innerHTML = `Logged in as <span id="userEmail">${user.email}</span>`;
+                loadNotes();
+            } else {
+                authSection.style.display = 'block';
+                notesSection.style.display = 'none';
+            }
+        }
+
+        // Sign Up
+        document.getElementById('signupBtn').addEventListener('click', async () => {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+
+            if (!email || !password) {
+                showAuthMessage('Please enter both email and password', 'error');
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+
+            if (error) {
+                showAuthMessage(error.message, 'error');
+            } else {
+                showAuthMessage('Check your email to verify your account!', 'success');
+            }
+        });
+
+        // Sign In
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+
+            console.log('Attempting login...'); // Debug
+
+            if (!email || !password) {
+                showAuthMessage('Please enter both email and password', 'error');
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            console.log('Login result:', { data, error }); // Debug
+
+            if (error) {
+                showAuthMessage('Login failed: ' + error.message, 'error');
+            } else {
+                showAuthMessage('Login successful!', 'success');
+                setTimeout(() => checkUser(), 500);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            checkUser();
+        });
+
+        // Save Note
+        document.getElementById('saveNoteBtn').addEventListener('click', async () => {
+            const title = noteTitle.value.trim();
+            const content = noteContent.value.trim();
+
+            if (!content) {
+                showNoteMessage('Please write something!', 'error');
+                return;
+            }
+
+            const noteData = {
+                title: title || 'Untitled',
+                content: content,
+                user_id: currentUser.id,
+                updated_at: new Date().toISOString()
+            };
+
+            let result;
+            if (editingNoteId) {
+                // Update existing note
+                result = await supabase
+                    .from('notes')
+                    .update(noteData)
+                    .eq('id', editingNoteId);
+            } else {
+                // Create new note
+                result = await supabase
+                    .from('notes')
+                    .insert([noteData]);
+            }
+
+            if (result.error) {
+                showNoteMessage(result.error.message, 'error');
+            } else {
+                showNoteMessage(editingNoteId ? 'Note updated!' : 'Note saved!', 'success');
+                noteTitle.value = '';
+                noteContent.value = '';
+                editingNoteId = null;
+                document.getElementById('cancelEditBtn').style.display = 'none';
+                document.getElementById('saveNoteBtn').textContent = 'Save Note';
+                loadNotes();
+            }
+        });
+
+        // Cancel Edit
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            editingNoteId = null;
+            noteTitle.value = '';
+            noteContent.value = '';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('saveNoteBtn').textContent = 'Save Note';
+        });
+
+        // Load Notes
+        async function loadNotes() {
+            const { data: notes, error } = await supabase
+                .from('notes')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading notes:', error);
+                return;
+            }
+
+            if (notes.length === 0) {
+                notesList.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No notes yet</h2>
+                        <p>Start writing your first note above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            notesList.innerHTML = notes.map(note => `
+                <div class="note-card">
+                    <h3>${escapeHtml(note.title)}</h3>
+                    <p>${escapeHtml(note.content)}</p>
+                    <div class="note-meta">
+                        Created: ${new Date(note.created_at).toLocaleString()}
+                    </div>
+                    <div class="note-actions">
+                        <button class="btn btn-small" onclick="editNote('${note.id}', '${escapeHtml(note.title)}', \`${escapeHtml(note.content)}\`)">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteNote('${note.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Edit Note
+        window.editNote = function(id, title, content) {
+            editingNoteId = id;
+            noteTitle.value = title;
+            noteContent.value = content;
+            document.getElementById('saveNoteBtn').textContent = 'Update Note';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Delete Note
+        window.deleteNote = async function(id) {
+            if (!confirm('Are you sure you want to delete this note?')) return;
+
+            const { error } = await supabase
+                .from('notes')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                alert('Error deleting note: ' + error.message);
+            } else {
+                showNoteMessage('Note deleted!', 'success');
+                loadNotes();
+            }
+        };
+
+        // Helper Functions
+        function showAuthMessage(text, type) {
+            authMessage.textContent = text;
+            authMessage.className = `message ${type}`;
+            authMessage.style.display = 'block';
+        }
+
+        function showNoteMessage(text, type) {
+            noteMessage.textContent = text;
+            noteMessage.className = `message ${type}`;
+            noteMessage.style.display = 'block';
+            setTimeout(() => {
+                noteMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        checkUser();
+    })();
+</script>
+</body>
+</html>
